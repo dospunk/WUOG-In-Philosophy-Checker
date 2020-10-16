@@ -27,6 +27,7 @@ BILLBOARD_200_EARLIEST = date(1963, 8, 17)
 ARTIST_SEPARATOR = "`~"
 
 def flush_stdin():
+	'''multi-platform way to flush stdin'''
 	if sys.platform == "win32":
 		while msvcrt.kbhit():
 			msvcrt.getch()
@@ -34,6 +35,7 @@ def flush_stdin():
 		sys.stdin.flush()
 
 def get_char() -> str:
+	'''multi-platform getch that always returns a string'''
 	if sys.platform == "win32":
 		return msvcrt.getch().decode("ASCII")
 	else:
@@ -58,6 +60,7 @@ def chart_name_to_table_name(chart_name: str) -> str:
 		return ""
 
 def fetch_and_insert_date(datestr: str, chart_name: str, dbconn: sqlite3.Connection) -> str:
+	'''fetches the chart chart_name at date datestr and inserts the relevant information into the database'''
 	table_name = chart_name_to_table_name(chart_name)
 	dbcurs = dbconn.cursor()
 	print(f"database does not contain entry for {datestr}, fetching now")
@@ -139,6 +142,7 @@ def init_db() -> sqlite3.Connection:
 	return conn
 
 def continue_or_quit():
+	'''Prints a prompt and allows the user to either continue with the current activity or quit the program'''
 	print("Press [c] to continue searching, or [q] to quit")
 	flush_stdin()
 	key = get_char()
