@@ -10,6 +10,7 @@ from datetime import timedelta, date
 
 #https://stackoverflow.com/a/16726460/6645696 might be a good idea to separate searching and updating, since this would be
 #undoubtedly faster
+#speed isn't an issue yet though so it it's not necessary yet
 
 # TYPES
 class FoundInfo(NamedTuple):
@@ -25,6 +26,11 @@ TODAY = date.today()
 TWENTY_YEARS_AGO = date(TODAY.year-20, TODAY.month, TODAY.day)
 BILLBOARD_200_EARLIEST = date(1963, 8, 17)
 ARTIST_SEPARATOR = "`~"
+
+def get_next_date(d: Union[str,date]) -> date:
+	if isinstance(d, str):
+		d = date.fromisoformat(d)
+	return d - timedelta(weeks=1)
 
 def flush_stdin():
 	'''multi-platform way to flush stdin'''
@@ -79,7 +85,9 @@ def find_in_table(
 	dbconn: sqlite3.Connection,
 	start_date: date,
 	stop_date: date,
-	chart_name: str) -> Union[FoundInfo, None]:
+	chart_name: str
+) -> Union[FoundInfo, None]:
+	artist = artist.lower()
 	#get the table name based on the chart name
 	table_name = chart_name_to_table_name(chart_name)
 	#get the most recent chart and use its date as the starting point
@@ -116,7 +124,7 @@ def find_in_table(
 		if curr_is_odd_date:
 			curr_week = date.fromisoformat(key_from_value(ODD_DATES, curr_week))
 		#check the next date
-		curr_week = curr_week - timedelta(weeks=1)
+		curr_week = get_next_date(curr_week)
 	#if the artist is not found, return None
 	return None
 
@@ -162,23 +170,22 @@ def main():
 	while True:
 		query = input("artist name: ")
 		query = query.strip()
-		query_lowered = query.lower()
 		print("Searching in Hot 100")
-		hot100_found_data = find_in_hot100(query_lowered, TODAY, conn)
+		hot100_found_data = find_in_hot100(query, TODAY, conn)
 		while hot100_found_data:
 			output_found_artist(query, "hot-100", hot100_found_data)
 			continue_or_quit()
 			print("Continuing...")
-			next_date = date.fromisoformat(hot100_found_data.date) - timedelta(weeks=1)
-			hot100_found_data = find_in_hot100(query_lowered, next_date, conn)
+			next_date = get_next_date(hot100_found_data.date)
+			hot100_found_data = find_in_hot100(query, next_date, conn)
 		print("Searching in Billboard 200")
-		bb200_found_data = find_in_bb200(query_lowered, TODAY, conn)
+		bb200_found_data = find_in_bb200(query, TODAY, conn)
 		while bb200_found_data:
 			output_found_artist(query, "billboard-200", bb200_found_data)
 			continue_or_quit()
 			print("Continuing...")
-			next_date = date.fromisoformat(bb200_found_data.date) - timedelta(weeks=1)
-			bb200_found_data = find_in_bb200(query_lowered, next_date, conn)
+			next_date = get_next_date(bb200_found_data.date)
+			bb200_found_data = find_in_bb200(query, next_date, conn)
 		print(f"{query} not found, you're good to go!")
 		print("If you would like to search for another artist, continue")
 		continue_or_quit()
